@@ -1,0 +1,28 @@
+# Python
+backend/__pycache__/
+backend/*.py[cod]
+backend/venv/
+backend/.env
+*.pyc
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# Environment variables (catch-all)
+.env
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
