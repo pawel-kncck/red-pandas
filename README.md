@@ -1,26 +1,27 @@
-# Data Analytics LLM MVP
+# Red Pandas - LLM powered Data Analytics
 
 A lightweight data analytics application that leverages LLMs to analyze and interpret data through natural language queries.
 
 ## 🚀 Features
 
-- Upload CSV/JSON data files
+- Upload CSV data files
 - Ask natural language questions about your data
 - Get AI-powered insights and analysis
+- Maintain conversation history
 - Simple, clean interface for data exploration
 
 ## 🛠 Tech Stack
 
 - **Frontend**: React (Vite) + TypeScript + Tailwind CSS
 - **Backend**: FastAPI (Python)
-- **Database**: PostgreSQL
+- **Database**: MongoDB
 - **AI**: OpenAI API
 
 ## 📋 Prerequisites
 
 - Node.js 18+ and npm
 - Python 3.8+
-- PostgreSQL (or Docker)
+- MongoDB (for local development - skip if deploying directly to Railway)
 - OpenAI API key
 
 ## 🏃‍♂️ Quick Start
@@ -28,11 +29,24 @@ A lightweight data analytics application that leverages LLMs to analyze and inte
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
-cd analytics-app
+git clone https://github.com/pawel-kncck/red-pandas
+cd red-pandas
 ```
 
-### 2. Set up the Backend
+### 2. Set up MongoDB
+
+**Option A: MongoDB Atlas (Recommended - Free tier available)**
+
+1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a cluster and get your connection string
+
+**Option B: Local MongoDB with Docker**
+
+```bash
+docker run -d -p 27017:27017 --name red-pandas-mongo mongo
+```
+
+### 3. Set up the Backend
 
 ```bash
 cd backend
@@ -45,7 +59,9 @@ Create a `.env` file in the backend directory:
 
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
-DATABASE_URL=postgresql://user:password@localhost/analytics_db
+MONGODB_URL=mongodb://localhost:27017/
+# For MongoDB Atlas: mongodb+srv://username:password@cluster.mongodb.net/
+DATABASE_NAME=red_pandas_db
 ```
 
 Run the backend server:
@@ -56,7 +72,7 @@ uvicorn main:app --reload
 
 The API will be available at `http://localhost:8000`
 
-### 3. Set up the Frontend
+### 4. Set up the Frontend
 
 In a new terminal:
 
@@ -68,23 +84,16 @@ npm run dev
 
 The app will be available at `http://localhost:5173`
 
-### 4. Set up PostgreSQL
-
-Using Docker:
-
-```bash
-docker run --name analytics-db -e POSTGRES_PASSWORD=yourpassword -p 5432:5432 -d postgres
-```
-
-Or use a cloud provider like Supabase or Neon for quick setup.
-
 ## 📁 Project Structure
 
 ```
-analytics-app/
+red-pandas/
 ├── backend/
 │   ├── main.py           # FastAPI application
-│   ├── models.py         # Database models
+│   ├── database.py       # MongoDB connection
+│   ├── models.py         # Pydantic models
+│   ├── services/         # Business logic
+│   │   └── openai_service.py
 │   ├── .env             # Environment variables
 │   └── requirements.txt  # Python dependencies
 ├── frontend/
@@ -98,73 +107,33 @@ analytics-app/
 
 ## 🔌 API Endpoints
 
-| Method | Endpoint       | Description           |
-| ------ | -------------- | --------------------- |
-| GET    | `/api/health`  | Health check          |
-| POST   | `/api/analyze` | Analyze data with LLM |
-| POST   | `/api/upload`  | Upload data file      |
+| Method | Endpoint                            | Description                                  |
+| ------ | ----------------------------------- | -------------------------------------------- |
+| GET    | `/api/health`                       | Health check                                 |
+| POST   | `/api/session/create`               | Create new analysis session with data upload |
+| GET    | `/api/session/{session_id}`         | Get session details and history              |
+| POST   | `/api/session/{session_id}/analyze` | Analyze data with LLM query                  |
+| GET    | `/api/sessions`                     | List all sessions                            |
 
-### Example Request
+## 💬 Example Queries
 
-```bash
-curl -X POST "http://localhost:8000/api/analyze" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompt": "What are the main trends in this data?",
-    "data_context": "CSV data here..."
-  }'
-```
+Once you upload your data (CSV), you can ask questions like:
+
+- "What are the top 5 products by revenue?"
+- "Show me the trend over the last 6 months"
+- "Which category has the highest growth rate?"
+- "Summarize the key insights from this data"
 
 ## 🚢 Deployment
 
-### Quick Deploy Options
+### Deploy to Railway (Recommended - All-in-one)
 
-- **Backend**: Railway, Render, or Fly.io
-- **Frontend**: Vercel or Netlify
-- **Database**: Supabase, Neon, or Railway PostgreSQL
-
-## 🔧 Environment Variables
-
-### Backend (.env)
-
-```
-OPENAI_API_KEY=sk-...
-DATABASE_URL=postgresql://...
-```
-
-### Frontend (.env.local)
-
-```
-VITE_API_URL=http://localhost:8000
-```
-
-## 📝 Development
-
-### Running Tests
-
-```bash
-# Backend
-cd backend
-pytest
-
-# Frontend
-cd frontend
-npm test
-```
-
-### Adding New Features
-
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Make changes and test
-3. Submit pull request
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-MIT License
+1. Create account at [Railway](https://railway.app)
+2. Install Railway CLI: `npm i -g @railway/cli`
+3. From project root: `railway login && railway up`
+4. Add MongoDB from Railway's template marketplace
+5. Set environment variables in Railway dashboard
+6. Update frontend's `VITE_API_URL` to your Railway backend URL
 
 ## 🆘 Support
 
