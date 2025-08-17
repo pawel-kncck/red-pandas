@@ -8,9 +8,6 @@
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.11"
     },
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "18"
-    },
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
@@ -41,7 +38,7 @@
     }
   },
 
-  "forwardPorts": [8000, 5173, 27017],
+  "forwardPorts": [8000, 5173, 27018],
   "portsAttributes": {
     "8000": {
       "label": "FastAPI Backend",
