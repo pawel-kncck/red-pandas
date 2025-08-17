@@ -153,11 +153,15 @@ npm run dev
 
 ```
 red-pandas/
-├── docker-compose.yml     # Docker orchestration
 ├── dev.sh                 # Development scripts
 ├── Makefile              # Quick commands
+├── docker/
+│   ├── development/
+│   │   ├── docker-compose.yml     # Docker orchestration
+│   │   ├── backend.Dockerfile     # Backend Docker config
+│   │   └── frontend.Dockerfile    # Frontend Docker config
+│   └── production/
 ├── backend/
-│   ├── Dockerfile.dev    # Backend Docker config
 │   ├── main.py           # FastAPI application
 │   ├── database.py       # MongoDB connection
 │   ├── models.py         # Pydantic models
@@ -169,7 +173,6 @@ red-pandas/
 │   ├── .env              # Environment variables
 │   └── requirements.txt  # Python dependencies
 ├── frontend/
-│   ├── Dockerfile.dev    # Frontend Docker config
 │   ├── src/
 │   │   ├── App.tsx       # Main React component
 │   │   ├── components/   # React components
@@ -239,10 +242,10 @@ Both frontend and backend support hot reloading:
 
 ```bash
 # Build production images
-docker-compose -f docker-compose.prod.yml build
+docker-compose -f docker/production/docker-compose.yml build
 
 # Run in production mode
-docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker/production/docker-compose.yml up -d
 ```
 
 ## 🧪 Testing

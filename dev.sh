@@ -47,54 +47,54 @@ case "$1" in
         check_env
         
         print_color "🚀 Building and starting containers..." "$YELLOW"
-        docker-compose up --build
+        docker-compose -f docker/development/docker-compose.yml up --build
         ;;
         
     stop)
         print_color "🛑 Stopping Red Pandas..." "$YELLOW"
-        docker-compose down
+        docker-compose -f docker/development/docker-compose.yml down
         ;;
         
     restart)
         print_color "🔄 Restarting Red Pandas..." "$YELLOW"
-        docker-compose restart
+        docker-compose -f docker/development/docker-compose.yml restart
         ;;
         
     logs)
         service=${2:-}
         if [ -z "$service" ]; then
-            docker-compose logs -f
+            docker-compose -f docker/development/docker-compose.yml logs -f
         else
-            docker-compose logs -f $service
+            docker-compose -f docker/development/docker-compose.yml logs -f $service
         fi
         ;;
         
     shell)
         service=${2:-backend}
         print_color "🐚 Opening shell in $service container..." "$YELLOW"
-        docker-compose exec $service sh
+        docker-compose -f docker/development/docker-compose.yml exec $service sh
         ;;
         
     clean)
         print_color "🧹 Cleaning up..." "$YELLOW"
-        docker-compose down -v
+        docker-compose -f docker/development/docker-compose.yml down -v
         print_color "✅ Cleaned up volumes and containers" "$GREEN"
         ;;
         
     rebuild)
         print_color "🔨 Rebuilding containers..." "$YELLOW"
-        docker-compose build --no-cache
-        docker-compose up
+        docker-compose -f docker/development/docker-compose.yml build --no-cache
+        docker-compose -f docker/development/docker-compose.yml up
         ;;
         
     status)
         print_color "📊 Container Status:" "$GREEN"
-        docker-compose ps
+        docker-compose -f docker/development/docker-compose.yml ps
         ;;
         
     test)
         print_color "🧪 Running backend tests..." "$YELLOW"
-        docker-compose exec backend pytest
+        docker-compose -f docker/development/docker-compose.yml exec backend pytest
         ;;
         
     *)

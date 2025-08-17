@@ -7,3 +7,5 @@ Fix UI
 Add authentication
 Add docker
 and docker-dev
+
+Create docker/production setup before deployment
