@@ -1,23 +1,28 @@
 import { useState, useEffect } from 'react';
-import { FileUpload } from './components/FileUpload';
-import { QueryInput } from './components/QueryInput';
-import { ConversationDisplay } from './components/ConversationDisplay';
-import { SessionInfo } from './components/SessionInfo';
-import { sessionsApi } from './api/sessions';
-import type { Session, AnalysisResponse } from './types';
-import { Activity, ChevronLeft, Trash2 } from 'lucide-react';
+import {
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
+import { DataUploadView } from '@/components/DataUploadView';
+import { AnalysisView } from '@/components/AnalysisView';
+import { sessionsApi } from '@/api/sessions';
+import type { Session, AnalysisResponse, ApiError } from '@/types';
+import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 function App() {
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [conversations, setConversations] = useState<AnalysisResponse[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [uploadError, setUploadError] = useState<string>('');
   const [healthStatus, setHealthStatus] = useState<'healthy' | 'degraded' | 'unhealthy'>('healthy');
 
   // Check API health on mount
   useEffect(() => {
     checkHealth();
+    loadSessions();
   }, []);
 
   const checkHealth = async () => {
@@ -30,22 +35,37 @@ function App() {
     }
   };
 
+  const loadSessions = async () => {
+    try {
+      const sessionsData = await sessionsApi.getSessions();
+      setSessions(sessionsData);
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+    }
+  };
+
   const handleFileUpload = async (file: File) => {
+    console.log('Starting file upload:', file.name, file.size, file.type);
     setIsUploading(true);
-    setUploadError('');
     
     try {
       const response = await sessionsApi.createSession(file);
+      console.log('Session created:', response);
       
-      // Fetch full session details
       const session = await sessionsApi.getSession(response.session_id);
+      console.log('Session loaded:', session);
+      
       setCurrentSession(session);
       setConversations([]);
+      await loadSessions();
+      toast.success('Data uploaded successfully');
     } catch (error: any) {
-      setUploadError(
-        error.response?.data?.detail || 'Failed to upload file. Please try again.'
-      );
-      console.error('Upload error:', error);
+      console.error('Full error object:', error);
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.message || 
+                          'Failed to upload file';
+      toast.error(errorMessage);
+      console.error('Upload error:', errorMessage);
     } finally {
       setIsUploading(false);
     }
@@ -59,18 +79,18 @@ function App() {
     try {
       const response = await sessionsApi.analyzeData(currentSession.id, question);
       setConversations([...conversations, response]);
-    } catch (error: any) {
+    } catch (error) {
       const errorResponse: AnalysisResponse = {
         question,
         generated_code: '',
         raw_result: null,
         interpretation: '',
-        error: error.response?.data?.detail || 'Failed to analyze data. Please try again.',
+        error: (error as ApiError).response?.data?.detail || 'Failed to analyze data',
         execution_time: 0,
         conversation_id: '',
       };
       setConversations([...conversations, errorResponse]);
-      console.error('Analysis error:', error);
+      toast.error('Analysis failed');
     } finally {
       setIsAnalyzing(false);
     }
@@ -79,151 +99,84 @@ function App() {
   const handleNewSession = () => {
     setCurrentSession(null);
     setConversations([]);
-    setUploadError('');
   };
 
   const handleDeleteSession = async () => {
     if (!currentSession) return;
     
-    if (window.confirm('Are you sure you want to delete this session?')) {
-      try {
-        await sessionsApi.deleteSession(currentSession.id);
-        handleNewSession();
-      } catch (error) {
-        console.error('Delete error:', error);
-      }
+    try {
+      await sessionsApi.deleteSession(currentSession.id);
+      await loadSessions();
+      handleNewSession();
+      toast.success('Session deleted');
+    } catch (error) {
+      toast.error('Failed to delete session');
+      console.error('Delete error:', error);
+    }
+  };
+
+  const handleSelectSession = async (sessionId: string) => {
+    try {
+      const session = await sessionsApi.getSession(sessionId);
+      setCurrentSession(session);
+      // Map conversation_history to conversations format if needed
+      const conversations = session.conversation_history?.map((entry: any) => ({
+        question: entry.question,
+        generated_code: entry.code || '',
+        raw_result: entry.result,
+        interpretation: entry.interpretation || '',
+        error: entry.error,
+        execution_time: 0,
+        conversation_id: entry.id || '',
+      })) || [];
+      setConversations(conversations);
+    } catch (error) {
+      toast.error('Failed to load session');
+      console.error('Load session error:', error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <Activity className="w-8 h-8 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-900">Red Pandas</h1>
-              <span className="text-sm text-gray-500">LLM-powered Data Analytics</span>
-            </div>
-            
-            {/* Health Status Indicator */}
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${
-                healthStatus === 'healthy' ? 'bg-green-500' : 
-                healthStatus === 'degraded' ? 'bg-yellow-500' : 'bg-red-500'
-              }`} />
-              <span className="text-sm text-gray-600">
-                {healthStatus === 'healthy' ? 'Connected' : 
-                 healthStatus === 'degraded' ? 'Degraded' : 'Disconnected'}
-              </span>
+    <SidebarProvider>
+      <div className="flex h-screen w-full bg-background">
+        <AppSidebar
+          sessions={sessions}
+          currentSession={currentSession}
+          onSelectSession={handleSelectSession}
+          onNewSession={handleNewSession}
+          healthStatus={healthStatus}
+        />
+        
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <div className="border-b border-border px-4 py-3 flex items-center">
+            <SidebarTrigger className="-ml-1" />
+            <div className="ml-4 flex-1">
+              <h1 className="text-sm font-medium text-muted-foreground">
+                Red Pandas
+              </h1>
             </div>
           </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {!currentSession ? (
-          // Upload View
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Upload your data to get started
-              </h2>
-              <p className="text-gray-600">
-                Upload a CSV file and ask questions in natural language
-              </p>
-            </div>
-            
-            <FileUpload
-              onFileSelect={handleFileUpload}
-              isUploading={isUploading}
-              error={uploadError}
-            />
-            
-            {/* Example Queries */}
-            <div className="mt-12 p-6 bg-blue-50 rounded-lg">
-              <h3 className="font-semibold text-gray-900 mb-3">Example queries:</h3>
-              <ul className="space-y-2 text-sm text-gray-700">
-                <li>• What are the top 5 products by revenue?</li>
-                <li>• Show me the trend over the last 6 months</li>
-                <li>• Which category has the highest growth rate?</li>
-                <li>• Summarize the key insights from this data</li>
-                <li>• What's the correlation between price and sales volume?</li>
-              </ul>
-            </div>
+          
+          <div className="flex-1 overflow-auto">
+            {!currentSession ? (
+              <DataUploadView
+                onFileSelect={handleFileUpload}
+                isUploading={isUploading}
+              />
+            ) : (
+              <AnalysisView
+                session={currentSession}
+                conversations={conversations}
+                isAnalyzing={isAnalyzing}
+                onQuery={handleQuery}
+                onDeleteSession={handleDeleteSession}
+              />
+            )}
           </div>
-        ) : (
-          // Analysis View
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Sidebar - Session Info */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-4 space-y-4">
-                {/* Action Buttons */}
-                <div className="flex space-x-2">
-                  <button
-                    onClick={handleNewSession}
-                    className="flex-1 flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-2" />
-                    New Session
-                  </button>
-                  <button
-                    onClick={handleDeleteSession}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    title="Delete session"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-                
-                {/* Session Info */}
-                <SessionInfo
-                  filename={currentSession.filename}
-                  rowCount={currentSession.row_count}
-                  columnCount={currentSession.column_count}
-                  columns={currentSession.columns || []}
-                  createdAt={currentSession.created_at}
-                />
-              </div>
-            </div>
-            
-            {/* Right Content - Conversation */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Query Input */}
-              <div className="bg-white rounded-lg shadow-sm p-4">
-                <QueryInput
-                  onSubmit={handleQuery}
-                  isLoading={isAnalyzing}
-                  placeholder="Ask a question about your data..."
-                />
-              </div>
-              
-              {/* Conversation History */}
-              {conversations.length > 0 ? (
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <ConversationDisplay
-                    conversations={conversations}
-                    isLoading={isAnalyzing}
-                  />
-                </div>
-              ) : (
-                <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-                  <Activity className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Ready to analyze your data
-                  </h3>
-                  <p className="text-gray-600">
-                    Ask any question about your {currentSession.filename} file
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </main>
-    </div>
+        </main>
+      </div>
+      <Toaster position="bottom-right" theme="dark" />
+    </SidebarProvider>
   );
 }
 

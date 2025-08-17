@@ -5,7 +5,7 @@ interface ConversationItem {
   question: string;
   interpretation: string;
   generated_code: string;
-  raw_result?: any;
+  raw_result?: unknown;
   error?: string;
   execution_time?: number;
 }
@@ -19,7 +19,7 @@ export const ConversationDisplay: React.FC<ConversationDisplayProps> = ({
   conversations,
   isLoading,
 }) => {
-  const formatResult = (result: any): string => {
+  const formatResult = (result: unknown): string => {
     if (result === null || result === undefined) return 'No result';
     if (typeof result === 'object') {
       return JSON.stringify(result, null, 2);

@@ -6,15 +6,16 @@ export interface Session {
   column_count: number;
   columns?: string[];
   dtypes?: Record<string, string>;
-  data_sample?: any[];
+  data_sample?: unknown[];
   conversation_history?: ConversationEntry[];
+  conversations?: AnalysisResponse[];
 }
 
 export interface ConversationEntry {
   id: string;
   question: string;
   code: string;
-  result: any;
+  result: unknown;
   interpretation: string;
   error?: string;
   timestamp: string;
@@ -23,7 +24,7 @@ export interface ConversationEntry {
 export interface AnalysisResponse {
   question: string;
   generated_code: string;
-  raw_result: any;
+  raw_result: unknown;
   interpretation: string;
   error?: string;
   execution_time: number;
@@ -35,4 +36,12 @@ export interface HealthStatus {
   database: string;
   openai: string;
   timestamp: string;
+}
+
+export interface ApiError {
+  response?: {
+    data?: {
+      detail?: string;
+    };
+  };
 }

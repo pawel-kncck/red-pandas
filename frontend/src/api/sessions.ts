@@ -12,12 +12,20 @@ export const sessionsApi = {
   createSession: async (file: File): Promise<{
     session_id: string;
     message: string;
-    data_info: any;
+    data_info: Record<string, unknown>;
   }> => {
+    console.log('Creating session with file:', file.name, file.size, file.type);
     const formData = new FormData();
     formData.append('file', file);
-    const response = await uploadClient.post('/api/session/create', formData);
-    return response.data;
+    
+    try {
+      const response = await uploadClient.post('/api/session/create', formData);
+      console.log('Upload response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Upload failed:', error);
+      throw error;
+    }
   },
 
   // Get session details
@@ -30,6 +38,12 @@ export const sessionsApi = {
   listSessions: async (): Promise<{ sessions: Session[]; total: number }> => {
     const response = await apiClient.get('/api/sessions');
     return response.data;
+  },
+
+  // Get all sessions (simplified)
+  getSessions: async (): Promise<Session[]> => {
+    const response = await apiClient.get('/api/sessions');
+    return response.data.sessions || [];
   },
 
   // Analyze data with query
