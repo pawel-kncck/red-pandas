@@ -18,5 +18,9 @@ RUN apt-get update && apt-get install -y \
 # Just ensure the workspace directory exists
 WORKDIR /workspace
 
+# Install Claude Code CLI globally
+RUN npm install -g @anthropic-ai/claude-code
+
+
 # Switch to the existing vscode user
 USER vscode

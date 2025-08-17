@@ -11,14 +11,15 @@ Red Pandas is an LLM-powered data analytics application that follows OpenAI's Co
 ### Backend Development
 
 ```bash
-# Start backend server (includes venv setup and dependency installation)
-./run.sh
-
-# Or manually:
+# Start backend server with proper MongoDB authentication in devcontainer
 cd backend
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload
+./start.sh
+
+# Or manually with environment variable:
+cd backend
+source .venv/bin/activate  # On Windows: venv\Scripts\activate
+export MONGODB_URL="mongodb://admin:password@mongodb:27017/?authSource=admin"
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 The backend runs at `http://localhost:8000` with API docs at `http://localhost:8000/docs`

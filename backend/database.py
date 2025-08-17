@@ -19,6 +19,7 @@ db = Database()
 async def connect_to_mongo():
     """Create database connection with connection pooling"""
     try:
+        logger.info(f"Connecting to MongoDB with URL: {settings.MONGODB_URL}")
         db.client = AsyncIOMotorClient(
             settings.MONGODB_URL,
             maxPoolSize=10,
@@ -29,6 +30,11 @@ async def connect_to_mongo():
         
         # Test connection
         await db.client.admin.command('ping')
+        
+        # Test write permission
+        test_result = await db.database.test_collection.insert_one({'test': 'startup'})
+        logger.info(f"Test write successful: {test_result.inserted_id}")
+        await db.database.test_collection.delete_one({'_id': test_result.inserted_id})
         
         # Create indexes for better performance
         await create_indexes()
